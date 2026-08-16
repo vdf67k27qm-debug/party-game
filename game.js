@@ -8,7 +8,7 @@ class MainScene extends Phaser.Scene {
     }
 
     preload() {
-        // 外部画像は使わず、今回はGraphicsで描画します
+        // 外部画像は使わず、Graphicsで描画します
     }
 
     create() {
@@ -17,10 +17,10 @@ class MainScene extends Phaser.Scene {
             x: 0,
             z: 0,
             h: 0,
-            vx: 0,
-            vz: 0,
             vh: 0,
             isFalling: false,
+            fallStartX: 0,
+            fallStartZ: 0,
             inputX: 0,
             inputZ: 0
         };
@@ -31,7 +31,7 @@ class MainScene extends Phaser.Scene {
             gravity: 0.6,       // 重力
             jumpVelocity: 12,   // ジャンプの初速
             fieldSize: 200,     // フィールドのサイズ（中心からの半径）
-            shadowOffset: 15    // 影をどれくらい手前に表示するか
+            shadowOffset: 25    // 影を手前に表示するオフセット（値を大きくしてより手前に）
         };
 
         // --------------------------------------------------------
@@ -208,16 +208,20 @@ class MainScene extends Phaser.Scene {
         // --------------------------------------------------------
         // 3. フィールド外（落下）の判定
         // --------------------------------------------------------
+        const s = phys.fieldSize;
+        
         if (!p.isFalling) {
-            const s = phys.fieldSize;
+            // 地上にいて、フィールドの外に出た瞬間
             if (p.x < -s || p.x > s || p.z < -s || p.z > s) {
                 p.isFalling = true;
-                p.x = Phaser.Math.Clamp(p.x, -s, s);
-                p.z = Phaser.Math.Clamp(p.z, -s, s);
+                // 落下開始した瞬間の位置を「影がその場に残る位置」として固定保存する
+                p.fallStartX = Phaser.Math.Clamp(p.x, -s, s);
+                p.fallStartZ = Phaser.Math.Clamp(p.z, -s, s);
             }
         }
 
-        if (p.h < -800) {
+        // 一定以上落下したらスタート地点へリセット
+        if (p.h < -600) {
             this.resetPlayer();
         }
 
@@ -226,12 +230,17 @@ class MainScene extends Phaser.Scene {
         // --------------------------------------------------------
         
         // 【影の計算】
-        let shadowZ = p.z + phys.shadowOffset;
-        let shadowScreen = this.worldToScreen(p.x, shadowZ, 0);
+        // 落下中は「落下し始めた瞬間の端の位置(fallStartX/Z)」に影を固定する。地上では通常の現在地。
+        let shadowX = p.isFalling ? p.fallStartX : p.x;
+        let shadowZ = (p.isFalling ? p.fallStartZ : p.z) + phys.shadowOffset;
+        
+        let shadowScreen = this.worldToScreen(shadowX, shadowZ, 0);
         
         this.shadowSprite.setPosition(shadowScreen.x, shadowScreen.y);
-        this.shadowSprite.setDepth(shadowZ - 1);
+        // 影のdepthを十分に小さくし、キャラクターよりも確実に奥（背後）に描画されるようにする
+        this.shadowSprite.setDepth(shadowZ - 999);
 
+        // 影のサイズ調整（ジャンプ中や落下中のスケール維持）
         if (p.h > 0) {
             let scale = Math.max(0.3, 1 - (p.h / 150));
             this.shadowSprite.setScale(scale);
@@ -243,6 +252,7 @@ class MainScene extends Phaser.Scene {
         let playerScreen = this.worldToScreen(p.x, p.z, p.h);
         
         this.playerSprite.setPosition(playerScreen.x, playerScreen.y);
+        // キャラクターのdepthは現在のZ座標にする（影の深度を小さくしたため、これで確実に手前に描画されます）
         this.playerSprite.setDepth(p.z);
     }
 
