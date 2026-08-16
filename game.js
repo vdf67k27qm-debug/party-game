@@ -1,3 +1,13 @@
+// ======================================================
+// PARTY GAME
+// 基本フィールド Ver.2
+// ======================================================
+
+
+// ======================================================
+// GAME CONFIG
+// ======================================================
+
 const config = {
   type: Phaser.AUTO,
 
@@ -6,33 +16,34 @@ const config = {
 
   backgroundColor: '#87CEEB',
 
+  parent: 'game-container',
+
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH
   },
 
-  parent: 'game-container',
-
   scene: {
-    create,
-    update
+    create: create,
+    update: update
   }
 };
+
 
 const game = new Phaser.Game(config);
 
 
-// ==========================================
-// フィールド設定
-// ==========================================
+// ======================================================
+// FIELD
+// ======================================================
 
 const FIELD_WIDTH = 650;
 const FIELD_DEPTH = 360;
 
 
-// ==========================================
-// プレイヤー
-// ==========================================
+// ======================================================
+// PLAYER
+// ======================================================
 
 let player;
 let playerShadow;
@@ -45,30 +56,40 @@ let playerVX = 0;
 let playerVZ = 0;
 let playerVH = 0;
 
-let isFalling = false;
-let fallVelocity = 0;
 
-
-// ==========================================
-// 物理設定
-// ==========================================
+// ======================================================
+// MOVEMENT
+// ======================================================
 
 const MOVE_SPEED = 3.5;
+
 const GRAVITY = 0.55;
+
 const JUMP_POWER = 11;
 
 
-// ==========================================
-// スタート地点
-// ==========================================
+// ======================================================
+// FALL
+// ======================================================
+
+let isFalling = false;
+
+let fallVelocity = 0;
+
+let fallDirection = '';
+
+
+// ======================================================
+// START POSITION
+// ======================================================
 
 const START_X = 0;
 const START_Z = 0;
 
 
-// ==========================================
-// ジョイスティック
-// ==========================================
+// ======================================================
+// JOYSTICK
+// ======================================================
 
 let joystickBase;
 let joystickKnob;
@@ -79,91 +100,190 @@ let joystickY = 0;
 let movePointerId = null;
 
 
-// ==========================================
-// ジャンプボタン
-// ==========================================
+// ======================================================
+// JUMP BUTTON
+// ======================================================
 
 let jumpButton;
 let jumpText;
 
 
-// ==========================================
-// 世界座標 → 画面座標
-// ==========================================
+// ======================================================
+// KEYBOARD
+// ======================================================
+
+let cursors;
+
+
+// ======================================================
+// WORLD → SCREEN
+// ======================================================
+//
+// X = 左右
+//
+// Z = 奥行き
+//
+// H = 高さ
+//
+// 奥に行くほど画面上へ。
+// 高くジャンプするほど画面上へ。
+// ======================================================
 
 function worldToScreen(x, z, h) {
 
   return {
+
     x: 400 + x,
-    y: 360 + z * 0.65 - h
+
+    y:
+      360 +
+      z * 0.65 -
+      h
+
   };
 
 }
 
 
-// ==========================================
-// フィールド描画
-// ==========================================
+// ======================================================
+// FIELD DRAW
+// ======================================================
 
 function drawField(scene) {
 
-  const graphics = scene.add.graphics();
-
-  const x1 = -FIELD_WIDTH / 2;
-  const x2 = FIELD_WIDTH / 2;
-
-  const z1 = -FIELD_DEPTH / 2;
-  const z2 = FIELD_DEPTH / 2;
-
-  const p1 = worldToScreen(x1, z1, 0);
-  const p2 = worldToScreen(x2, z1, 0);
-  const p3 = worldToScreen(x2, z2, 0);
-  const p4 = worldToScreen(x1, z2, 0);
+  const graphics =
+    scene.add.graphics();
 
 
-  // ------------------------------------------
-  // 土台の側面
-  // ------------------------------------------
+  const x1 =
+    -FIELD_WIDTH / 2;
 
-  graphics.fillStyle(0x4f713b, 1);
+  const x2 =
+    FIELD_WIDTH / 2;
+
+  const z1 =
+    -FIELD_DEPTH / 2;
+
+  const z2 =
+    FIELD_DEPTH / 2;
+
+
+  const p1 =
+    worldToScreen(
+      x1,
+      z1,
+      0
+    );
+
+  const p2 =
+    worldToScreen(
+      x2,
+      z1,
+      0
+    );
+
+  const p3 =
+    worldToScreen(
+      x2,
+      z2,
+      0
+    );
+
+  const p4 =
+    worldToScreen(
+      x1,
+      z2,
+      0
+    );
+
+
+  // ==================================================
+  // FIELD SIDE
+  // ==================================================
+
+  graphics.fillStyle(
+    0x4f713b,
+    1
+  );
+
 
   graphics.beginPath();
 
-  graphics.moveTo(p1.x, p1.y);
-  graphics.lineTo(p2.x, p2.y);
+  graphics.moveTo(
+    p1.x,
+    p1.y
+  );
 
-  graphics.lineTo(p2.x, p2.y + 80);
-  graphics.lineTo(p3.x, p3.y + 80);
-  graphics.lineTo(p4.x, p4.y + 80);
+  graphics.lineTo(
+    p2.x,
+    p2.y
+  );
 
-  graphics.lineTo(p4.x, p4.y);
+  graphics.lineTo(
+    p2.x,
+    p2.y + 80
+  );
+
+  graphics.lineTo(
+    p3.x,
+    p3.y + 80
+  );
+
+  graphics.lineTo(
+    p4.x,
+    p4.y + 80
+  );
+
+  graphics.lineTo(
+    p4.x,
+    p4.y
+  );
 
   graphics.closePath();
 
   graphics.fillPath();
 
 
-  // ------------------------------------------
-  // 地面
-  // ------------------------------------------
+  // ==================================================
+  // FIELD TOP
+  // ==================================================
 
-  graphics.fillStyle(0x79a85b, 1);
+  graphics.fillStyle(
+    0x79a85b,
+    1
+  );
+
 
   graphics.beginPath();
 
-  graphics.moveTo(p1.x, p1.y);
-  graphics.lineTo(p2.x, p2.y);
-  graphics.lineTo(p3.x, p3.y);
-  graphics.lineTo(p4.x, p4.y);
+  graphics.moveTo(
+    p1.x,
+    p1.y
+  );
+
+  graphics.lineTo(
+    p2.x,
+    p2.y
+  );
+
+  graphics.lineTo(
+    p3.x,
+    p3.y
+  );
+
+  graphics.lineTo(
+    p4.x,
+    p4.y
+  );
 
   graphics.closePath();
 
   graphics.fillPath();
 
 
-  // ------------------------------------------
-  // フィールドの縁
-  // ------------------------------------------
+  // ==================================================
+  // FIELD EDGE
+  // ==================================================
 
   graphics.lineStyle(
     4,
@@ -171,27 +291,44 @@ function drawField(scene) {
     1
   );
 
+
   graphics.beginPath();
 
-  graphics.moveTo(p1.x, p1.y);
-  graphics.lineTo(p2.x, p2.y);
-  graphics.lineTo(p3.x, p3.y);
-  graphics.lineTo(p4.x, p4.y);
+  graphics.moveTo(
+    p1.x,
+    p1.y
+  );
+
+  graphics.lineTo(
+    p2.x,
+    p2.y
+  );
+
+  graphics.lineTo(
+    p3.x,
+    p3.y
+  );
+
+  graphics.lineTo(
+    p4.x,
+    p4.y
+  );
 
   graphics.closePath();
 
   graphics.strokePath();
 
 
-  // ------------------------------------------
-  // 地面の模様
-  // ------------------------------------------
+  // ==================================================
+  // GROUND PATTERN
+  // ==================================================
 
   graphics.lineStyle(
     2,
     0x6d984f,
     0.35
   );
+
 
   for (
     let x = x1 + 40;
@@ -206,7 +343,11 @@ function drawField(scene) {
     ) {
 
       const a =
-        worldToScreen(x, z, 0);
+        worldToScreen(
+          x,
+          z,
+          0
+        );
 
       const b =
         worldToScreen(
@@ -214,6 +355,7 @@ function drawField(scene) {
           z + 10,
           0
         );
+
 
       graphics.lineBetween(
         a.x,
@@ -226,32 +368,187 @@ function drawField(scene) {
 
   }
 
+
+  // ==================================================
+  // FIELD DEPTH
+  // ==================================================
+  //
+  // 地面はプレイヤーより先に描画。
+  // プレイヤーは地面の上に存在する。
+  // ==================================================
+
+  graphics.setDepth(0);
+
 }
 
 
-// ==========================================
-// フィールド内判定
-// ==========================================
+// ======================================================
+// FIELD CHECK
+// ======================================================
 
 function isInsideField(x, z) {
 
   return (
+
     x >= -FIELD_WIDTH / 2 &&
+
     x <= FIELD_WIDTH / 2 &&
+
     z >= -FIELD_DEPTH / 2 &&
+
     z <= FIELD_DEPTH / 2
+
   );
 
 }
 
 
-// ==========================================
-// プレイヤー表示更新
-// ==========================================
+// ======================================================
+// FIND FALL DIRECTION
+// ======================================================
+//
+// どの方向からフィールド外へ出たか調べる。
+// ======================================================
+
+function getFallDirection(x, z) {
+
+  const halfWidth =
+    FIELD_WIDTH / 2;
+
+  const halfDepth =
+    FIELD_DEPTH / 2;
+
+
+  // 奥
+
+  if (
+    z < -halfDepth
+  ) {
+
+    return 'back';
+
+  }
+
+
+  // 手前
+
+  if (
+    z > halfDepth
+  ) {
+
+    return 'front';
+
+  }
+
+
+  // 左
+
+  if (
+    x < -halfWidth
+  ) {
+
+    return 'left';
+
+  }
+
+
+  // 右
+
+  if (
+    x > halfWidth
+  ) {
+
+    return 'right';
+
+  }
+
+
+  return '';
+
+}
+
+
+// ======================================================
+// PLAYER VISUAL
+// ======================================================
 
 function updatePlayerVisual() {
 
-  const pos =
+  if (!player) {
+    return;
+  }
+
+
+  // ====================================================
+  // FALLING
+  // ====================================================
+
+  if (isFalling) {
+
+    // ----------------------------------------------
+    // 奥側へ落ちた場合
+    // ----------------------------------------------
+    //
+    // 地面の向こう側へ落ちたので、
+    // キャラクターを地面の後ろに隠す。
+    //
+
+    if (
+      fallDirection === 'back'
+    ) {
+
+      player.setVisible(false);
+
+      playerShadow.setVisible(false);
+
+      return;
+
+    }
+
+
+    // ----------------------------------------------
+    // 手前・左右から落下
+    // ----------------------------------------------
+
+    player.setVisible(true);
+
+    playerShadow.setVisible(false);
+
+
+    const fallingPosition =
+      worldToScreen(
+        playerX,
+        playerZ,
+        playerH
+      );
+
+
+    player.x =
+      fallingPosition.x;
+
+    player.y =
+      fallingPosition.y;
+
+
+    return;
+
+  }
+
+
+  // ====================================================
+  // NORMAL
+  // ====================================================
+
+  player.setVisible(true);
+
+  playerShadow.setVisible(true);
+
+
+  // ====================================================
+  // PLAYER POSITION
+  // ====================================================
+
+  const playerPosition =
     worldToScreen(
       playerX,
       playerZ,
@@ -259,73 +556,127 @@ function updatePlayerVisual() {
     );
 
 
-  // 影は地面に固定
+  player.x =
+    playerPosition.x;
 
-  const shadowPos =
+  player.y =
+    playerPosition.y;
+
+
+  // ====================================================
+  // SHADOW POSITION
+  // ====================================================
+  //
+  // 影は「キャラクターの現在位置」ではなく
+  // 「キャラクターの足元」に置く。
+  //
+  // つまり H を 0 にする。
+  // ====================================================
+
+  const shadowPosition =
     worldToScreen(
       playerX,
       playerZ,
       0
     );
 
+
   playerShadow.x =
-    shadowPos.x;
+    shadowPosition.x;
 
   playerShadow.y =
-    shadowPos.y;
+    shadowPosition.y;
 
 
-  // ジャンプすると影を小さくする
+  // ====================================================
+  // SHADOW SCALE
+  // ====================================================
+  //
+  // 地面にいるとき → 100%
+  //
+  // 高くジャンプ → 少し小さく
+  //
+  // 落下中 → ここには来ない
+  // ====================================================
 
   const shadowScale =
     Math.max(
       0.45,
-      1 - playerH / 120
+      1 -
+      playerH / 120
     );
 
-  playerShadow.scaleX =
-    shadowScale;
 
-  playerShadow.scaleY =
-    shadowScale;
-
-
-  // プレイヤー
-
-  player.x =
-    pos.x;
-
-  player.y =
-    pos.y;
+  playerShadow.setScale(
+    shadowScale
+  );
 
 
-  // ジャンプ中の立体感
+  // ====================================================
+  // PLAYER SCALE
+  // ====================================================
 
-  const scale =
+  const playerScale =
     1 +
     Math.min(
       playerH / 500,
       0.12
     );
 
-  player.setScale(scale);
+
+  player.setScale(
+    playerScale
+  );
+
+
+  // ====================================================
+  // DEPTH
+  // ====================================================
+  //
+  // 手前にいるキャラクターほど
+  // 前に描画される。
+  //
+  // 今後、アイテムや他プレイヤーを追加するときに
+  // 非常に重要になる。
+  // ====================================================
+
+  player.setDepth(
+    1000 + playerZ
+  );
+
+
+  playerShadow.setDepth(
+    900 + playerZ
+  );
 
 }
 
 
-// ==========================================
-// ジャンプ
-// ==========================================
+// ======================================================
+// JUMP
+// ======================================================
 
 function jump() {
 
-  if (isFalling) {
-    return;
-  }
+  // 落下中はジャンプ不可
 
   if (
+    isFalling
+  ) {
+
+    return;
+
+  }
+
+
+  // 地面に立っているとき
+
+  if (
+
     playerH <= 0.1 &&
+
     playerVH <= 0
+
   ) {
 
     playerVH =
@@ -336,31 +687,115 @@ function jump() {
 }
 
 
-// ==========================================
-// プレイヤーをリセット
-// ==========================================
+// ======================================================
+// START FALL
+// ======================================================
+
+function startFall() {
+
+  if (
+    isFalling
+  ) {
+
+    return;
+
+  }
+
+
+  isFalling =
+    true;
+
+
+  fallVelocity =
+    1;
+
+
+  fallDirection =
+    getFallDirection(
+      playerX,
+      playerZ
+    );
+
+
+  // 落下開始時点で影を消す
+
+  playerShadow.setVisible(
+    false
+  );
+
+
+  // 奥側なら即座に地面の後ろへ
+
+  if (
+    fallDirection === 'back'
+  ) {
+
+    player.setVisible(
+      false
+    );
+
+  }
+
+
+}
+
+
+// ======================================================
+// RESET PLAYER
+// ======================================================
 
 function resetPlayer() {
 
-  playerX = START_X;
-  playerZ = START_Z;
-  playerH = 0;
+  playerX =
+    START_X;
 
-  playerVX = 0;
-  playerVZ = 0;
-  playerVH = 0;
+  playerZ =
+    START_Z;
 
-  isFalling = false;
-  fallVelocity = 0;
+  playerH =
+    0;
+
+
+  playerVX =
+    0;
+
+  playerVZ =
+    0;
+
+  playerVH =
+    0;
+
+
+  isFalling =
+    false;
+
+
+  fallVelocity =
+    0;
+
+
+  fallDirection =
+    '';
+
+
+  player.setVisible(
+    true
+  );
+
+
+  playerShadow.setVisible(
+    true
+  );
+
 
   updatePlayerVisual();
 
 }
 
 
-// ==========================================
-// ジョイスティック
-// ==========================================
+// ======================================================
+// JOYSTICK
+// ======================================================
 
 function updateJoystick(pointer) {
 
@@ -372,16 +807,21 @@ function updateJoystick(pointer) {
     pointer.y -
     joystickBase.y;
 
+
   const distance =
     Math.sqrt(
       dx * dx +
       dy * dy
     );
 
-  const maxDistance = 40;
+
+  const maxDistance =
+    40;
 
 
-  if (distance > maxDistance) {
+  if (
+    distance > maxDistance
+  ) {
 
     joystickX =
       dx / distance;
@@ -392,13 +832,17 @@ function updateJoystick(pointer) {
 
     joystickKnob.x =
       joystickBase.x +
-      joystickX * maxDistance;
+      joystickX *
+      maxDistance;
 
     joystickKnob.y =
       joystickBase.y +
-      joystickY * maxDistance;
+      joystickY *
+      maxDistance;
 
-  } else {
+  }
+
+  else {
 
     joystickX =
       dx / maxDistance;
@@ -418,138 +862,250 @@ function updateJoystick(pointer) {
 }
 
 
-// ==========================================
+// ======================================================
 // CREATE
-// ==========================================
+// ======================================================
 
 function create() {
 
-  // フィールド
+
+  // ====================================================
+  // FIELD
+  // ====================================================
 
   drawField(this);
 
 
-  // プレイヤーの影
+  // ====================================================
+  // SHADOW
+  // ====================================================
 
   playerShadow =
     this.add.ellipse(
+
       0,
       0,
+
       48,
       22,
+
       0x000000,
       0.25
+
     );
 
 
-  // 仮プレイヤー
-  // 後で動物キャラクターに変更する
+  playerShadow.setDepth(
+    900
+  );
+
+
+  // ====================================================
+  // PLAYER
+  // ====================================================
 
   player =
     this.add.circle(
+
       0,
       0,
+
       25,
+
       0xffcc66
+
     );
 
 
-  // キーボード
+  player.setDepth(
+    1000
+  );
+
+
+  // ====================================================
+  // KEYBOARD
+  // ====================================================
 
   cursors =
     this.input.keyboard
       .createCursorKeys();
 
 
-  // ------------------------------------------
-  // ジョイスティック
-  // ------------------------------------------
+  // ====================================================
+  // JOYSTICK BASE
+  // ====================================================
 
   joystickBase =
     this.add.circle(
+
       100,
       510,
+
       55,
+
       0x333333,
       0.45
+
     );
 
+
+  joystickBase.setScrollFactor(
+    0
+  );
+
+
+  joystickBase.setDepth(
+    5000
+  );
+
+
+  // ====================================================
+  // JOYSTICK KNOB
+  // ====================================================
 
   joystickKnob =
     this.add.circle(
+
       100,
       510,
+
       25,
+
       0xffffff,
       0.85
+
     );
 
 
-  // ------------------------------------------
-  // ジャンプボタン
-  // ------------------------------------------
+  joystickKnob.setScrollFactor(
+    0
+  );
+
+
+  joystickKnob.setDepth(
+    5001
+  );
+
+
+  // ====================================================
+  // JUMP BUTTON
+  // ====================================================
 
   jumpButton =
     this.add.circle(
+
       700,
       510,
+
       45,
+
       0x333333,
       0.55
+
     );
 
 
+  jumpButton.setScrollFactor(
+    0
+  );
+
+
+  jumpButton.setDepth(
+    5000
+  );
+
+
+  // ====================================================
+  // JUMP TEXT
+  // ====================================================
+
   jumpText =
     this.add.text(
+
       700,
       510,
+
       'JUMP',
+
       {
+
         fontSize: '16px',
+
         color: '#ffffff',
+
         fontStyle: 'bold'
+
       }
+
     ).setOrigin(0.5);
 
 
-  // ------------------------------------------
-  // マルチタッチ
-  // ------------------------------------------
-
-  this.input.addPointer(3);
+  jumpText.setScrollFactor(
+    0
+  );
 
 
-  // ------------------------------------------
-  // 指を押した
-  // ------------------------------------------
+  jumpText.setDepth(
+    5001
+  );
+
+
+  // ====================================================
+  // MULTI TOUCH
+  // ====================================================
+
+  this.input.addPointer(
+    3
+  );
+
+
+  // ====================================================
+  // POINTER DOWN
+  // ====================================================
 
   this.input.on(
     'pointerdown',
     function(pointer) {
 
-      // ジョイスティック
+
+      // ----------------------------------------------
+      // MOVE
+      // ----------------------------------------------
 
       if (
+
         pointer.x < 250 &&
+
         pointer.y > 400 &&
+
         movePointerId === null
+
       ) {
 
         movePointerId =
           pointer.id;
 
-        updateJoystick(pointer);
+
+        updateJoystick(
+          pointer
+        );
+
 
         return;
 
       }
 
 
-      // ジャンプ
+      // ----------------------------------------------
+      // JUMP
+      // ----------------------------------------------
 
       if (
+
         pointer.x > 600 &&
+
         pointer.y > 430
+
       ) {
 
         jump();
@@ -560,20 +1116,27 @@ function create() {
   );
 
 
-  // ------------------------------------------
-  // 指を動かした
-  // ------------------------------------------
+  // ====================================================
+  // POINTER MOVE
+  // ====================================================
 
   this.input.on(
     'pointermove',
     function(pointer) {
 
+
       if (
-        pointer.id === movePointerId &&
+
+        pointer.id ===
+        movePointerId &&
+
         pointer.isDown
+
       ) {
 
-        updateJoystick(pointer);
+        updateJoystick(
+          pointer
+        );
 
       }
 
@@ -581,23 +1144,30 @@ function create() {
   );
 
 
-  // ------------------------------------------
-  // 指を離した
-  // ------------------------------------------
+  // ====================================================
+  // POINTER UP
+  // ====================================================
 
   this.input.on(
     'pointerup',
     function(pointer) {
 
+
       if (
-        pointer.id === movePointerId
+        pointer.id ===
+        movePointerId
       ) {
 
         movePointerId =
           null;
 
-        joystickX = 0;
-        joystickY = 0;
+
+        joystickX =
+          0;
+
+        joystickY =
+          0;
+
 
         joystickKnob.x =
           joystickBase.x;
@@ -611,23 +1181,30 @@ function create() {
   );
 
 
-  // ------------------------------------------
-  // タッチキャンセル
-  // ------------------------------------------
+  // ====================================================
+  // POINTER CANCEL
+  // ====================================================
 
   this.input.on(
     'pointercancel',
     function(pointer) {
 
+
       if (
-        pointer.id === movePointerId
+        pointer.id ===
+        movePointerId
       ) {
 
         movePointerId =
           null;
 
-        joystickX = 0;
-        joystickY = 0;
+
+        joystickX =
+          0;
+
+        joystickY =
+          0;
+
 
         joystickKnob.x =
           joystickBase.x;
@@ -641,48 +1218,75 @@ function create() {
   );
 
 
-  // 初期位置
+  // ====================================================
+  // RESET
+  // ====================================================
 
   resetPlayer();
 
 }
 
 
-// ==========================================
+// ======================================================
 // UPDATE
-// ==========================================
+// ======================================================
 
 function update() {
 
-  // ========================================
-  // 落下中
-  // ========================================
 
-  if (isFalling) {
+  // ====================================================
+  // FALLING
+  // ====================================================
 
-    fallVelocity += 0.7;
+  if (
+    isFalling
+  ) {
 
-    playerH -= fallVelocity;
+
+    // ----------------------------------------------
+    // 落下速度
+    // ----------------------------------------------
+
+    fallVelocity +=
+      0.7;
+
+
+    // ----------------------------------------------
+    // 高さを下げる
+    // ----------------------------------------------
+
+    playerH -=
+      fallVelocity;
+
+
+    // ----------------------------------------------
+    // 表示更新
+    // ----------------------------------------------
 
     updatePlayerVisual();
 
 
-    // 十分落下したらリセット
+    // ----------------------------------------------
+    // 十分落ちたらリセット
+    // ----------------------------------------------
 
-    if (playerH < -250) {
+    if (
+      playerH < -250
+    ) {
 
       resetPlayer();
 
     }
+
 
     return;
 
   }
 
 
-  // ========================================
-  // 入力
-  // ========================================
+  // ====================================================
+  // INPUT
+  // ====================================================
 
   let moveX =
     joystickX;
@@ -691,46 +1295,75 @@ function update() {
     joystickY;
 
 
-  // キーボード
+  // ====================================================
+  // KEYBOARD
+  // ====================================================
 
-  if (cursors.left.isDown) {
-    moveX = -1;
-  }
+  if (
+    cursors.left.isDown
+  ) {
 
-  if (cursors.right.isDown) {
-    moveX = 1;
-  }
+    moveX =
+      -1;
 
-  if (cursors.up.isDown) {
-    moveZ = -1;
-  }
-
-  if (cursors.down.isDown) {
-    moveZ = 1;
   }
 
 
-  // ========================================
-  // 移動
-  // ========================================
+  if (
+    cursors.right.isDown
+  ) {
+
+    moveX =
+      1;
+
+  }
+
+
+  if (
+    cursors.up.isDown
+  ) {
+
+    moveZ =
+      -1;
+
+  }
+
+
+  if (
+    cursors.down.isDown
+  ) {
+
+    moveZ =
+      1;
+
+  }
+
+
+  // ====================================================
+  // MOVEMENT
+  // ====================================================
 
   playerVX =
-    moveX * MOVE_SPEED;
+    moveX *
+    MOVE_SPEED;
+
 
   playerVZ =
-    moveZ * MOVE_SPEED;
+    moveZ *
+    MOVE_SPEED;
 
 
   playerX +=
     playerVX;
 
+
   playerZ +=
     playerVZ;
 
 
-  // ========================================
-  // フィールドの端
-  // ========================================
+  // ====================================================
+  // FIELD EDGE
+  // ====================================================
 
   if (
     !isInsideField(
@@ -739,38 +1372,43 @@ function update() {
     )
   ) {
 
-    isFalling = true;
-
-    fallVelocity = 1;
+    startFall();
 
   }
 
 
-  // ========================================
-  // ジャンプ
-  // ========================================
+  // ====================================================
+  // JUMP PHYSICS
+  // ====================================================
 
   playerVH -=
     GRAVITY;
+
 
   playerH +=
     playerVH;
 
 
-  // 着地
+  // ====================================================
+  // LANDING
+  // ====================================================
 
-  if (playerH < 0) {
+  if (
+    playerH < 0
+  ) {
 
-    playerH = 0;
+    playerH =
+      0;
 
-    playerVH = 0;
+    playerVH =
+      0;
 
   }
 
 
-  // ========================================
-  // キーボードのジャンプ
-  // ========================================
+  // ====================================================
+  // KEYBOARD JUMP
+  // ====================================================
 
   if (
     Phaser.Input.Keyboard.JustDown(
@@ -783,9 +1421,9 @@ function update() {
   }
 
 
-  // ========================================
-  // 表示更新
-  // ========================================
+  // ====================================================
+  // VISUAL
+  // ====================================================
 
   updatePlayerVisual();
 
